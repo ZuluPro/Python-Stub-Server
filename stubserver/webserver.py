@@ -1,8 +1,16 @@
-import BaseHTTPServer, cgi, threading, re, urllib
+import cgi
+import threading
+import re
+import urllib
 import time
 import sys
+try:
+    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+except ImportError:
+    from http.server import HTTPServer, BaseHTTPRequestHandler
 
-class StoppableHTTPServer(BaseHTTPServer.HTTPServer):
+
+class StoppableHTTPServer(HTTPServer):
     """Python 2.5 HTTPServer does not close down properly when calling server_close.
     The implementation below was based on the comments in the below article:-
     http://stackoverflow.com/questions/268629/how-to-stop-basehttpserver-serveforever-in-a-basehttprequesthandler-subclass
@@ -11,14 +19,14 @@ class StoppableHTTPServer(BaseHTTPServer.HTTPServer):
     allow_reuse_address = True
 
     def __init__(self, *args, **kw):
-        BaseHTTPServer.HTTPServer.__init__(self, *args, **kw)
+        HTTPServer.__init__(self, *args, **kw)
 
     def serve_forever(self):
         while not self.stopped:
             self.handle_request()
 
     def server_close(self):
-        BaseHTTPServer.HTTPServer.server_close(self)
+        HTTPServer.server_close(self)
         self.stopped = True
         self._create_dummy_request()
         time.sleep(0.5)
@@ -35,7 +43,7 @@ class StoppableHTTPServer(BaseHTTPServer.HTTPServer):
 if sys.version_info[0] == 2 and sys.version_info[1] < 6:
     HTTPServer = StoppableHTTPServer
 else:
-    HTTPServer = BaseHTTPServer.HTTPServer
+    HTTPServer = HTTPServer
 
 
 class StubServer(object):
@@ -93,7 +101,7 @@ class Expectation(object):
     def __str__ (self):
         return "url: %s \n data_capture: %s\n" %(self.url,self.data_capture)   
 
-class StubResponse(BaseHTTPServer.BaseHTTPRequestHandler):
+class StubResponse(BaseHTTPRequestHandler):
 
     def __call__(self, request, client_address, server):
         self.request = request

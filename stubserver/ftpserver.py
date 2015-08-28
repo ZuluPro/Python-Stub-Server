@@ -1,9 +1,12 @@
 import threading
 import time
-import SocketServer
+try:
+    import SocketServer as socketserver
+except ImportError:
+    import socketserver
 
 
-class FTPServer(SocketServer.BaseRequestHandler):
+class FTPServer(socketserver.BaseRequestHandler):
     def __init__(self, hostname, port, interactions, files):
         self.hostname = hostname
         self.port = port
@@ -45,8 +48,8 @@ class FTPServer(SocketServer.BaseRequestHandler):
 
         def start_data_server():
             self.port = self.port + 1
-            SocketServer.TCPServer.allow_reuse_address = True
-            data_server = SocketServer.TCPServer((self.hostname, self.port + 1), self.data_handler)
+            socketserver.TCPServer.allow_reuse_address = True
+            data_server = socketserver.TCPServer((self.hostname, self.port + 1), self.data_handler)
             data_server.handle_request()
             data_server.server_close()
         self.t2 = threading.Thread(target=start_data_server)
@@ -79,7 +82,7 @@ class FTPServer(SocketServer.BaseRequestHandler):
         time.sleep(0.001)
 
 
-class FTPDataServer(SocketServer.StreamRequestHandler):
+class FTPDataServer(socketserver.StreamRequestHandler):
     def __init__(self, interactions, files):
         self.interactions = interactions
         self.files = files
@@ -114,7 +117,7 @@ class FTPDataServer(SocketServer.StreamRequestHandler):
         self.wfile.write(self.files[self.filename()])
 
 
-class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
 

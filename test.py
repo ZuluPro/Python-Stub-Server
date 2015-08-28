@@ -1,13 +1,20 @@
+from __future__ import with_statement
 import unittest
-import urllib
-import urllib2
+try:
+    import urllib2
+    from urllib2 import OpenerDirector, HTTPHandler, Request
+except ImportError:
+    import urllib as urllib2
+    from urllib.request import OpenerDirector, HTTPHandler, Request
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 from ftplib import FTP
 from stubserver import StubServer, FTPStubServer
-from StringIO import StringIO
-from unittest import TestCase
 
 
-class WebTest(TestCase):
+class WebTest(unittest.TestCase):
     def setUp(self):
         self.server = StubServer(8998)
         self.server.run()
@@ -17,18 +24,17 @@ class WebTest(TestCase):
         self.server.verify()
 
     def _make_request(self, url, method="GET", payload="", headers={}):
-        self.opener = urllib2.OpenerDirector()
-        self.opener.add_handler(urllib2.HTTPHandler())
-        request = urllib2.Request(url, headers=headers, data=payload)
+        self.opener = OpenerDirector()
+        self.opener.add_handler(HTTPHandler())
+        request = Request(url, headers=headers, data=payload)
         request.get_method = lambda: method
         response = self.opener.open(request)
         response_code = getattr(response, 'code', -1)
         return (response, response_code)
 
     def test_get_with_file_call(self):
-        f = open('data.txt', 'w')
-        f.write("test file")
-        f.close()
+        with open('data.txt', 'w') as fd:
+            fd.write("test file")
         self.server.expect(method="GET", url="/address/\d+$").and_return(mime_type="text/xml", file_content="./data.txt")
         response, response_code = self._make_request("http://localhost:8998/address/25", method="GET")
         expected = open("./data.txt", "r").read()
@@ -74,7 +80,7 @@ class WebTest(TestCase):
             f.close()
 
 
-class FTPTest(TestCase):
+class FTPTest(unittest.TestCase):
     def setUp(self):
         self.random_port = 0
         self.server = FTPStubServer(self.random_port)
@@ -127,5 +133,5 @@ class FTPTest(TestCase):
         self.assertEquals(expected_content, '\n'.join(file_content))
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     unittest.main()
