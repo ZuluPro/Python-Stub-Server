@@ -29,7 +29,7 @@ class FTPServer(SocketServer.BaseRequestHandler):
             cmd = self.request.recv(1024)
             if cmd:
                 self.interactions.append(cmd)
-                getattr(self, '_' + cmd[:4])(cmd)
+                getattr(self, '_' + cmd[:4].rstrip())(cmd)
 
     def _USER(self, cmd):
         self.request.send('331 Please specify password.\r\n')
@@ -72,6 +72,11 @@ class FTPServer(SocketServer.BaseRequestHandler):
         time.sleep(0.2)
         self.request.send('226 Enjoy your file\r\n')
         self.t2.join(1)
+
+    def _CWD(self, cmd):
+        self.request.send('150 Accepted data connection\r\n')
+        time.sleep(0.2)
+        self.request.send('226 Enjoy your this directory\r\n')
 
     def _QUIT(self, cmd):
         self.request.send('221 Goodbye\r\n')
